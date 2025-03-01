@@ -1,6 +1,7 @@
 from crewai import Agent, Task, Crew, Process
 import os
 from typing import Dict, Any
+from datetime import datetime
 
 class TelegramCrew:
     """
@@ -62,8 +63,11 @@ class TelegramCrew:
         Create and return the task for handling Telegram messages.
         This is the entry point for all Telegram interactions.
         """
+        # Add current date information to the context
+        current_date = datetime.now().strftime("%B %d, %Y")
+        
         return Task(
-            description=f"{self.tasks_config['handle_telegram_message']['description']}\nUser message: {user_message}\nConversation history: {conversation_history}\nChat ID: {chat_id}",
+            description=f"{self.tasks_config['handle_telegram_message']['description']}\nToday's date: {current_date}\nUser message: {user_message}\nConversation history: {conversation_history}\nChat ID: {chat_id}",
             expected_output=self.tasks_config['handle_telegram_message']['expected_output'],
             agent=self.telegram_gateway_agent()
         )
@@ -95,11 +99,14 @@ class TelegramCrew:
         crew = self.create_crew(user_message, conversation_history, chat_id)
         result = crew.kickoff()
         
+        # Ensure the result is a string
+        result_str = str(result)
+        
         # Update conversation history (simple approach - in production you might want to limit size)
-        updated_history = f"{conversation_history}\nUser: {user_message}\nAgent: {result}"
+        updated_history = f"{conversation_history}\nUser: {user_message}\nAgent: {result_str}"
         # Only keep recent history to avoid exceeding token limits
         if len(updated_history.split('\n')) > 20:  # Limit of 10 conversation turns
             updated_history = '\n'.join(updated_history.split('\n')[-20:])
         self.conversation_histories[chat_id] = updated_history
         
-        return result 
+        return result_str 

@@ -24,6 +24,17 @@ This project demonstrates best practices for building CrewAI agent systems:
    - Retrieves and synthesizes information
    - Returns factual data with sources
 
+3. **Time Agent**
+   - Provides accurate time information
+   - Calculates moon phases
+   - Determines sunrise/sunset times
+
+4. **Calendar Agent**
+   - Provides read-only access to Google Calendar
+   - Shows upcoming events
+   - Checks availability for specific dates and times
+   - Searches for events by keyword
+
 *More specialized agents can be added following the same pattern.*
 
 ## Setup
@@ -35,6 +46,7 @@ This project demonstrates best practices for building CrewAI agent systems:
 - Telegram Bot Token (from BotFather)
 - SerpAPI API key for web search functionality
 - OpenAI API key for CrewAI's underlying LLMs
+- Google Calendar API credentials (for Calendar Agent)
 
 ### Installation
 
@@ -82,6 +94,14 @@ OPENAI_API_KEY=your_openai_api_key_here
 SERPAPI_API_KEY=your_serpapi_api_key_here
 ```
 
+### Calendar Access Configuration
+
+For the Calendar Agent, you need to set up Google Calendar API credentials:
+
+1. Follow the instructions in `calendar_agent/README.md` to obtain Google Calendar API credentials
+2. Place your `credentials.json` file in the `calendar_agent/` directory
+3. When you first run the application, you'll be prompted to authorize access to your Google Calendar
+
 ## Additional Dependencies
 
 ### SerpAPI Dependencies
@@ -121,6 +141,16 @@ python bot.py
 
 The bot will now listen for messages and route them to the appropriate specialized agents.
 
+### Calendar Agent Usage
+
+To interact with your calendar, simply ask calendar-related questions:
+
+- "What meetings do I have tomorrow?"
+- "Am I free on May 15?"
+- "Check my availability next Monday between 2pm and 4pm"
+- "Do I have any meetings about the project this week?"
+- "What's on my schedule for today?"
+
 ## Extending
 
 To add a new specialized agent:
@@ -155,6 +185,18 @@ To add a new specialized agent:
 │   └── config/
 │       ├── agents.yaml             # Search agent definition
 │       └── tasks.yaml              # Search tasks
+├── time_agent/                     # Time agent
+│   ├── src/
+│   │   └── time_crew.py            # Time crew implementation
+│   └── config/
+│       ├── agents.yaml             # Time agent definition
+│       └── tasks.yaml              # Time tasks
+├── calendar_agent/                 # Calendar agent
+│   ├── src/
+│   │   └── calendar_crew.py        # Calendar crew implementation
+│   ├── README.md                   # Calendar agent documentation
+│   ├── credentials.json            # Google Calendar API credentials
+│   └── token.json                  # OAuth token for Google Calendar
 ├── examples/                       # Example scripts
 │   ├── search_example_original.py  # Example for CrewAI 0.11.2
 │   └── search_example_latest.py    # Example for CrewAI 0.102.0
@@ -283,6 +325,16 @@ You can also run individual tests:
 ```bash
 python tests/test_crewai_version.py
 ```
+
+### Testing the Calendar Agent
+
+To test the Calendar Agent specifically:
+
+```bash
+python calendar_agent/test_calendar_agent.py
+```
+
+This will run test queries both directly to the Calendar Agent and through the orchestrator.
 
 ### Welcome Message Feature
 
