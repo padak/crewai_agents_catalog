@@ -1,10 +1,10 @@
 from crewai import Agent, Task, Crew, Process
-from crewai.tools import SerpAPITool
-from crewai.cli.crew_cli import CrewBase, agent, task, crew
+from langchain_community.utilities.serpapi import SerpAPIWrapper
 import os
 from typing import Dict, Any
+from langchain.tools import Tool
 
-class SearchCrew(CrewBase):
+class SearchCrew:
     """
     A CrewAI crew that handles web search requests.
     Following the Single Responsibility Principle, this crew ONLY handles web search
@@ -13,9 +13,30 @@ class SearchCrew(CrewBase):
     
     def __init__(self):
         """Initialize the SearchCrew with configuration."""
-        super().__init__()
+        # Load agent and task configurations
+        self.agents_config = self._load_agents_config()
+        self.tasks_config = self._load_tasks_config()
     
-    @agent
+    def _load_agents_config(self):
+        """Load agent configurations"""
+        return {
+            'websearch_agent': {
+                'name': 'Web Search Agent',
+                'description': 'Performs web searches and synthesizes information from multiple sources',
+                'goal': 'Provide accurate, up-to-date information based on web searches',
+                'backstory': 'I am a specialized research agent who searches the web to find the most relevant and accurate information.'
+            }
+        }
+    
+    def _load_tasks_config(self):
+        """Load task configurations"""
+        return {
+            'perform_search': {
+                'description': 'Perform a web search on the given query and synthesize the results',
+                'expected_output': 'A comprehensive and accurate response that answers the query with relevant information from the web'
+            }
+        }
+    
     def websearch_agent(self) -> Agent:
         """
         Create and return the Web Search agent.
@@ -25,31 +46,38 @@ class SearchCrew(CrewBase):
         - Providing factual responses with sources
         """
         # Instantiate search tool
-        search_tool = SerpAPITool()
+        search = SerpAPIWrapper()
+        search_tool = Tool(
+            name="Search",
+            func=search.run,
+            description="Useful for when you need to answer questions about current events or search for specific information on the web."
+        )
         
         return Agent(
-            config=self.agents_config['websearch_agent'],
+            role=self.agents_config['websearch_agent']['name'],
+            goal=self.agents_config['websearch_agent']['goal'],
+            backstory=self.agents_config['websearch_agent']['backstory'],
             verbose=True,
             allow_delegation=False,
             tools=[search_tool],
             memory=False  # Search agent doesn't need persistent memory between searches
         )
     
-    @task
-    def perform_search(self) -> Task:
+    def perform_search(self, query: str, context: str = "") -> Task:
         """
         Create and return the task for performing web searches.
         """
         return Task(
-            config=self.tasks_config['perform_search']
+            description=f"{self.tasks_config['perform_search']['description']}\nSearch Query: {query}\nContext: {context}",
+            expected_output=self.tasks_config['perform_search']['expected_output'],
+            agent=self.websearch_agent()
         )
     
-    @crew
-    def crew(self) -> Crew:
+    def create_crew(self, query: str, context: str = "") -> Crew:
         """Create and return the Search crew focusing solely on web search functionality."""
         return Crew(
             agents=[self.websearch_agent()],
-            tasks=[self.perform_search()],
+            tasks=[self.perform_search(query, context)],
             process=Process.sequential,
             verbose=True
         )
@@ -66,11 +94,7 @@ class SearchCrew(CrewBase):
             The research results as a formatted string
         """
         # Run the crew with the search query and optional context
-        result = self.crew().kickoff(
-            inputs={
-                'search_query': query,
-                'context': context
-            }
-        )
+        crew = self.create_crew(query, context)
+        result = crew.kickoff()
         
-        return result.raw 
+        return result 

@@ -11,7 +11,8 @@ without connecting to the actual Telegram API.
 import os
 import sys
 import unittest
-from unittest.mock import MagicMock, patch
+import asyncio
+from unittest.mock import MagicMock, patch, AsyncMock
 
 # Add the project root to the path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -31,25 +32,34 @@ class TestTelegramBot(unittest.TestCase):
         })
         self.env_patcher.start()
         
-        # Mock the agent orchestrator
-        self.mock_orchestrator = MagicMock(spec=AgentOrchestrator)
-        self.orchestrator_patcher = patch('bot.AgentOrchestrator', 
-                                          return_value=self.mock_orchestrator)
-        self.mock_orchestrator_class = self.orchestrator_patcher.start()
+        # Mock the agent orchestrator's process_telegram_message method
+        # We need to use patch.object AFTER bot is imported
+        self.mock_process_message = MagicMock(return_value="Mock agent response")
+        self.orchestrator_patcher = patch.object(
+            bot.orchestrator, 'process_telegram_message', 
+            self.mock_process_message
+        )
+        self.orchestrator_patcher.start()
         
     def tearDown(self):
         """Tear down test fixtures"""
         self.env_patcher.stop()
         self.orchestrator_patcher.stop()
     
+    async def async_test(self, coro):
+        """Helper method to run async tests"""
+        return await coro
+    
     def test_start_command(self):
         """Test the /start command handler"""
         # Create mock update and context
         update = MagicMock()
+        update.message = AsyncMock()
+        update.message.reply_text = AsyncMock()
         context = MagicMock()
         
-        # Call the start function
-        bot.start(update, context)
+        # Call the start function using asyncio
+        asyncio.run(bot.start(update, context))
         
         # Assert the reply was called with the welcome message
         update.message.reply_text.assert_called_once()
@@ -62,10 +72,12 @@ class TestTelegramBot(unittest.TestCase):
         """Test the /help command handler"""
         # Create mock update and context
         update = MagicMock()
+        update.message = AsyncMock()
+        update.message.reply_text = AsyncMock()
         context = MagicMock()
         
-        # Call the help function
-        bot.help_command(update, context)
+        # Call the help function using asyncio
+        asyncio.run(bot.help_command(update, context))
         
         # Assert the reply was called with the help message
         update.message.reply_text.assert_called_once()
@@ -77,23 +89,25 @@ class TestTelegramBot(unittest.TestCase):
         """Test the message handler"""
         # Create mock update, context and orchestrator response
         update = MagicMock()
-        context = MagicMock()
+        update.message = AsyncMock()
         update.message.text = "Test message"
         update.message.chat_id = 12345
+        update.message.reply_text = AsyncMock()
         
-        # Configure the mock orchestrator to return a specific response
-        self.mock_orchestrator.process_telegram_message.return_value = "Mock agent response"
+        context = MagicMock()
+        context.bot = AsyncMock()
+        context.bot.send_chat_action = AsyncMock()
         
-        # Call the message handler
-        bot.handle_message(update, context)
+        # Call the message handler using asyncio
+        asyncio.run(bot.handle_message(update, context))
         
-        # Assert the typing action was sent
+        # Assert typing action was sent
         context.bot.send_chat_action.assert_called_once_with(
             chat_id=12345, action='typing'
         )
         
         # Assert orchestrator was called with the right parameters
-        self.mock_orchestrator.process_telegram_message.assert_called_once_with(
+        self.mock_process_message.assert_called_once_with(
             "12345", "Test message"
         )
         
@@ -104,15 +118,25 @@ class TestTelegramBot(unittest.TestCase):
         """Test the message handler error case"""
         # Create mock update and context
         update = MagicMock()
-        context = MagicMock()
+        update.message = AsyncMock()
         update.message.text = "Test message"
         update.message.chat_id = 12345
+        update.message.reply_text = AsyncMock()
         
-        # Configure the mock orchestrator to raise an exception
-        self.mock_orchestrator.process_telegram_message.side_effect = Exception("Test error")
+        context = MagicMock()
+        context.bot = AsyncMock()
+        context.bot.send_chat_action = AsyncMock()
         
-        # Call the message handler
-        bot.handle_message(update, context)
+        # Configure the mock to raise an exception
+        self.mock_process_message.side_effect = Exception("Test error")
+        
+        # Call the message handler using asyncio
+        asyncio.run(bot.handle_message(update, context))
+        
+        # Assert typing action was sent
+        context.bot.send_chat_action.assert_called_once_with(
+            chat_id=12345, action='typing'
+        )
         
         # Assert that an error message was sent
         update.message.reply_text.assert_called_once()

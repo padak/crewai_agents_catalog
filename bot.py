@@ -12,7 +12,8 @@ import os
 import logging
 from typing import Dict, Any
 from dotenv import load_dotenv
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram import Update
+from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 
 # Import the agent orchestrator
 from agent_orchestrator import AgentOrchestrator
@@ -35,17 +36,17 @@ if not TELEGRAM_BOT_TOKEN:
 # Initialize orchestrator
 orchestrator = AgentOrchestrator()
 
-def start(update, context):
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /start command"""
-    update.message.reply_text(
+    await update.message.reply_text(
         "Hello! I'm your AI assistant powered by CrewAI agents. "
         "Each specialized function is handled by a dedicated agent. "
         "How can I help you today?"
     )
 
-def help_command(update, context):
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /help command"""
-    update.message.reply_text(
+    await update.message.reply_text(
         "Here's how to use this bot:\n\n"
         "- Just send me any message or question\n"
         "- For web searches, try queries like 'search for latest AI news'\n"
@@ -54,7 +55,7 @@ def help_command(update, context):
         "Each type of request is handled by a specialized agent!"
     )
 
-def handle_message(update, context):
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle incoming messages"""
     user_text = update.message.text
     chat_id = update.message.chat_id
@@ -62,42 +63,43 @@ def handle_message(update, context):
     logger.info(f"Received message from {chat_id}: {user_text}")
     
     # Show typing status while processing
-    context.bot.send_chat_action(chat_id=chat_id, action='typing')
+    await context.bot.send_chat_action(chat_id=chat_id, action='typing')
     
     try:
         # Process through orchestrator
         result = orchestrator.process_telegram_message(str(chat_id), user_text)
         
         # Send response back
-        update.message.reply_text(result)
+        await update.message.reply_text(result)
     except Exception as e:
         logger.error(f"Error processing message: {e}")
-        update.message.reply_text(
+        await update.message.reply_text(
             "I'm sorry, I encountered an error while processing your request. "
             "Please try again or contact support if the issue persists."
         )
 
+async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle errors in the dispatcher"""
+    logger.error(f"Update {update} caused error {context.error}")
+
 def main():
     """Start the bot"""
-    # Create the Updater and pass it your bot's token
-    updater = Updater(TELEGRAM_BOT_TOKEN, use_context=True)
+    # Create the Application
+    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 
-    # Get the dispatcher to register handlers
-    dp = updater.dispatcher
-
-    # Register commands
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("help", help_command))
+    # Register command handlers
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("help", help_command))
 
     # Register message handler
-    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    
+    # Register error handler
+    application.add_error_handler(error_handler)
 
     # Start the bot
-    updater.start_polling()
     logger.info("Bot started, listening for messages...")
-    
-    # Run the bot until you press Ctrl-C
-    updater.idle()
+    application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':
     main() 
