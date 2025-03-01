@@ -29,11 +29,7 @@ GOOGLE_CALENDAR_PROJECT_ID=your_project_id
 GOOGLE_CALENDAR_CLIENT_SECRET=your_client_secret
 ```
 
-#### Option 3: Use the calendar_agent directory (Legacy)
-1. Copy `credentials.template.json` to `credentials.json` within the calendar_agent directory
-2. Replace the placeholder values with your actual Google API credentials
-
-IMPORTANT: Regardless of which method you choose, NEVER commit credential files to version control.
+IMPORTANT: Never commit credential files to version control.
 
 ### 3. Environment Variables
 
@@ -86,7 +82,7 @@ When you first run the Calendar Agent, it will prompt you to authenticate:
 
 1. A browser window will open asking you to log in to your Google account
 2. Grant permissions for the application to access your calendar (read-only)
-3. After authentication, the token will be saved to `calendar_agent/token.json` for future use
+3. After authentication, the token will be saved to `secrets/calendar/token.json` for future use
 
 ## Testing the Calendar Agent
 

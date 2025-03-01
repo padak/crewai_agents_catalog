@@ -63,11 +63,7 @@ yarn-error.log*
 
 # Project specific
 .env.example
-!.env.example calendar_agent/token.json
-
-# Google Calendar Credentials
-calendar_agent/token.json
-calendar_agent/credentials.json
+!.env.example
 
 # Secrets folder - contains all credential files
 secrets/
