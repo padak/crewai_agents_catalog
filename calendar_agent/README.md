@@ -15,10 +15,25 @@ This agent integrates with Google Calendar to allow querying and managing calend
 
 ### 2. Prepare the credential files
 
-1. Copy `credentials.template.json` to `credentials.json`
+You have several options for storing your Google Calendar credentials:
+
+#### Option 1: Use the secrets folder (Recommended)
+1. Place your `credentials.json` file in `secrets/calendar/`
+2. The first time you run the agent, it will authenticate and generate a `token.json` file in the same location
+
+#### Option 2: Use environment variables
+Set the following environment variables in your `.env` file:
+```
+GOOGLE_CALENDAR_CLIENT_ID=your_client_id
+GOOGLE_CALENDAR_PROJECT_ID=your_project_id
+GOOGLE_CALENDAR_CLIENT_SECRET=your_client_secret
+```
+
+#### Option 3: Use the calendar_agent directory (Legacy)
+1. Copy `credentials.template.json` to `credentials.json` within the calendar_agent directory
 2. Replace the placeholder values with your actual Google API credentials
-3. The first time you run the agent, it will prompt you to authorize access to your Google Calendar
-4. After authorization, a `token.json` file will be generated automatically
+
+IMPORTANT: Regardless of which method you choose, NEVER commit credential files to version control.
 
 ### 3. Environment Variables
 

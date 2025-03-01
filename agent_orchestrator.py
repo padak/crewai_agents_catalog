@@ -417,31 +417,75 @@ class AgentOrchestrator:
         token_path = os.getenv('GOOGLE_TOKEN_PATH')
         credentials_path = os.getenv('GOOGLE_CREDENTIALS_PATH')
         
-        # If not set in environment, use default paths
+        # If not set in environment, check in standard locations
         if not token_path:
-            token_path = os.path.join(os.getcwd(), 'token.json')
-            logger.debug(f"Using default token path: {token_path}")
+            # Check in secrets folder first
+            secrets_token_path = os.path.join(os.getcwd(), 'secrets', 'calendar', 'token.json')
+            default_token_path = os.path.join(os.getcwd(), 'token.json')
+            agent_token_path = os.path.join(os.getcwd(), 'calendar_agent', 'token.json')
+            
+            # Look for token in all possible locations
+            if os.path.exists(secrets_token_path):
+                token_path = secrets_token_path
+                logger.debug(f"Using token path from secrets folder: {token_path}")
+            elif os.path.exists(default_token_path):
+                token_path = default_token_path
+                logger.debug(f"Using token path from project root: {token_path}")
+            elif os.path.exists(agent_token_path):
+                token_path = agent_token_path
+                logger.debug(f"Using token path from calendar_agent directory: {token_path}")
+            else:
+                # If no token exists yet, use the secrets folder location for writing
+                token_path = secrets_token_path
+                logger.debug(f"No existing token found, will create at: {token_path}")
         else:
             logger.debug(f"Using token path from environment: {token_path}")
             
         if not credentials_path:
-            credentials_path = os.path.join(os.getcwd(), 'credentials.json')
-            logger.debug(f"Using default credentials path: {credentials_path}")
+            # Check in secrets folder first
+            secrets_credentials_path = os.path.join(os.getcwd(), 'secrets', 'calendar', 'credentials.json')
+            default_credentials_path = os.path.join(os.getcwd(), 'credentials.json')
+            agent_credentials_path = os.path.join(os.getcwd(), 'calendar_agent', 'credentials.json')
+            
+            # Look for credentials in all possible locations
+            if os.path.exists(secrets_credentials_path):
+                credentials_path = secrets_credentials_path
+                logger.debug(f"Using credentials path from secrets folder: {credentials_path}")
+            elif os.path.exists(default_credentials_path):
+                credentials_path = default_credentials_path
+                logger.debug(f"Using credentials path from project root: {credentials_path}")
+            elif os.path.exists(agent_credentials_path):
+                credentials_path = agent_credentials_path
+                logger.debug(f"Using credentials path from calendar_agent directory: {credentials_path}")
+            else:
+                # If no credentials file exists, log error
+                logger.error("Could not find credentials.json in any standard location")
+                raise FileNotFoundError("Could not find credentials.json file. Please place it in secrets/calendar/ directory")
         else:
             logger.debug(f"Using credentials path from environment: {credentials_path}")
         
+        # Create the secrets directory if it doesn't exist
+        secrets_dir = os.path.dirname(os.path.join(os.getcwd(), 'secrets', 'calendar'))
+        if not os.path.exists(secrets_dir):
+            logger.debug(f"Creating secrets directory at {secrets_dir}")
+            os.makedirs(secrets_dir, exist_ok=True)
+        
         if not os.path.exists(token_path):
-            logger.error(f"Token file not found at: {token_path}")
-            raise FileNotFoundError(f"Could not find token.json file at {token_path}")
+            logger.warning(f"Token file not found at: {token_path}")
+            logger.info(f"A new token file will be created during authentication")
             
         if not os.path.exists(credentials_path):
             logger.error(f"Credentials file not found at: {credentials_path}")
             raise FileNotFoundError(f"Could not find credentials.json file at {credentials_path}")
         
+        # Set environment variables so calendar agent can find the files
+        os.environ['GOOGLE_TOKEN_PATH'] = token_path
+        os.environ['GOOGLE_CREDENTIALS_PATH'] = credentials_path
+        
         logger.debug("Calendar credentials found, initializing calendar crew")
         
         # Import here to avoid circular imports
-        from agents.calendar_agent import CalendarCrew
+        from calendar_agent.src.calendar_crew import CalendarCrew
         
         # Check if required environment variables are set
         anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
