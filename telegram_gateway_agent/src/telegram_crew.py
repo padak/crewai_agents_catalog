@@ -1,9 +1,9 @@
 from crewai import Agent, Task, Crew, Process
-from crewai.cli.crew_cli import CrewBase, agent, task, crew
 import os
 from typing import Dict, Any
+from datetime import datetime
 
-class TelegramCrew(CrewBase):
+class TelegramCrew:
     """
     A CrewAI crew that handles Telegram messages by routing them to appropriate agents.
     Following the Single Responsibility Principle, this crew ONLY handles Telegram communication
@@ -12,12 +12,33 @@ class TelegramCrew(CrewBase):
     
     def __init__(self):
         """Initialize the TelegramCrew with configuration."""
-        super().__init__()
-        
-        # Dictionary to store conversation history for each chat_id
+        # Dictionary to store conversation histories for each chat_id
         self.conversation_histories = {}
+        
+        # Load agent and task configurations
+        self.agents_config = self._load_agents_config()
+        self.tasks_config = self._load_tasks_config()
     
-    @agent
+    def _load_agents_config(self):
+        """Load agent configurations"""
+        return {
+            'telegram_gateway_agent': {
+                'name': 'Telegram Gateway Agent',
+                'description': 'Manages Telegram communication, interprets user messages, and routes requests to specialized agents',
+                'goal': 'Provide helpful, accurate responses to Telegram users',
+                'backstory': 'I am a specialized communication agent who acts as the gateway between Telegram users and AI services.',
+            }
+        }
+    
+    def _load_tasks_config(self):
+        """Load task configurations"""
+        return {
+            'handle_telegram_message': {
+                'description': 'Process a message from a Telegram user and generate an appropriate response',
+                'expected_output': 'A clear, helpful response that addresses the user message'
+            }
+        }
+        
     def telegram_gateway_agent(self) -> Agent:
         """
         Create and return the Telegram Gateway agent.
@@ -28,29 +49,34 @@ class TelegramCrew(CrewBase):
         - Formatting responses for Telegram
         """
         return Agent(
-            config=self.agents_config['telegram_gateway_agent'],
+            role=self.agents_config['telegram_gateway_agent']['name'],
+            goal=self.agents_config['telegram_gateway_agent']['goal'],
+            backstory=self.agents_config['telegram_gateway_agent']['backstory'],
             verbose=True,
             allow_delegation=True,
             tools=[],  # No tools - pure communication agent
             memory=True  # Enable memory for maintaining conversation context
         )
     
-    @task
-    def handle_telegram_message(self) -> Task:
+    def handle_telegram_message(self, user_message: str, conversation_history: str, chat_id: str) -> Task:
         """
         Create and return the task for handling Telegram messages.
         This is the entry point for all Telegram interactions.
         """
+        # Add current date information to the context
+        current_date = datetime.now().strftime("%B %d, %Y")
+        
         return Task(
-            config=self.tasks_config['handle_telegram_message']
+            description=f"{self.tasks_config['handle_telegram_message']['description']}\nToday's date: {current_date}\nUser message: {user_message}\nConversation history: {conversation_history}\nChat ID: {chat_id}",
+            expected_output=self.tasks_config['handle_telegram_message']['expected_output'],
+            agent=self.telegram_gateway_agent()
         )
     
-    @crew
-    def crew(self) -> Crew:
+    def create_crew(self, user_message: str, conversation_history: str, chat_id: str) -> Crew:
         """Create and return the Telegram crew focusing solely on communication."""
         return Crew(
             agents=[self.telegram_gateway_agent()],
-            tasks=[self.handle_telegram_message()],
+            tasks=[self.handle_telegram_message(user_message, conversation_history, chat_id)],
             process=Process.sequential,
             verbose=True
         )
@@ -70,19 +96,17 @@ class TelegramCrew(CrewBase):
         conversation_history = self.conversation_histories.get(chat_id, "")
         
         # Run the crew with the user message and conversation history
-        result = self.crew().kickoff(
-            inputs={
-                'user_message': user_message,
-                'conversation_history': conversation_history,
-                'chat_id': chat_id  # Pass chat_id to allow agents to know which conversation this is
-            }
-        )
+        crew = self.create_crew(user_message, conversation_history, chat_id)
+        result = crew.kickoff()
+        
+        # Ensure the result is a string
+        result_str = str(result)
         
         # Update conversation history (simple approach - in production you might want to limit size)
-        updated_history = f"{conversation_history}\nUser: {user_message}\nAgent: {result.raw}"
+        updated_history = f"{conversation_history}\nUser: {user_message}\nAgent: {result_str}"
         # Only keep recent history to avoid exceeding token limits
         if len(updated_history.split('\n')) > 20:  # Limit of 10 conversation turns
             updated_history = '\n'.join(updated_history.split('\n')[-20:])
         self.conversation_histories[chat_id] = updated_history
         
-        return result.raw 
+        return result_str 
