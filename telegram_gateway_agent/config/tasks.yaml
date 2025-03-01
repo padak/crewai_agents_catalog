@@ -1,0 +1,32 @@
+handle_telegram_message:
+  description: >
+    You received a message from a Telegram user. The message is: "{user_message}".
+    Analyze the message to understand what the user is asking for. Determine what type of specialized agent
+    would be needed to fulfill this request (examples: search agent, data analysis agent, creative agent, etc.).
+    For this implementation, you should simply acknowledge the type of specialized agent needed but explain
+    that the connection to those agents is still being implemented.
+    Use the conversation history to maintain context: "{conversation_history}".
+  expected_output: >
+    A conversational, friendly response that:
+    1. Acknowledges the user's request
+    2. Explains what type of specialized agent would typically handle this (if applicable)
+    3. Maintains a natural conversation flow
+    4. For requests requiring specialized agents, politely explains that those connections are still being implemented
+  agent: telegram_gateway_agent
+
+perform_research:
+  description: >
+    The Telegram Gateway Agent has delegated a research task to you. A user on Telegram has asked: "{user_message}".
+    Their chat history for context is: "{conversation_history}".
+    
+    Your task is to use your search tools to find accurate, up-to-date information to answer their question.
+    Conduct thorough searches, assess the reliability of sources, and compile the most relevant information.
+  expected_output: >
+    A comprehensive but concise research report with:
+    1. Direct answers to the user's question with factual information
+    2. Sources or references when appropriate
+    3. Key points organized in a clear, scannable format
+    
+    Do not include unnecessary conversational elements - the Gateway Agent will handle that part.
+    Focus on providing accurate information that the Gateway Agent can use to craft a response.
+  agent: research_agent 

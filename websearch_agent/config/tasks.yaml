@@ -1,0 +1,14 @@
+perform_search:
+  description: >
+    Perform a web search to answer the following question or research the following topic: "{search_query}".
+    The search should be thorough and focus on finding accurate, up-to-date information.
+    If context is provided, use it for additional background: "{context}".
+  expected_output: >
+    A comprehensive but concise research report with:
+    1. Direct answers to the question with factual information
+    2. Sources or references for the information
+    3. Key points organized in a clear, scannable format
+    4. Any important caveats or limitations to the information provided
+    
+    The response should be factual, unbiased, and cite sources when possible.
+  agent: websearch_agent 

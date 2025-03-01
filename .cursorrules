@@ -1,0 +1,26 @@
+# Telegram Gateway Agent Project Guidelines
+
+## Environment Setup
+- Always use Python virtual environment (venv) for dependency isolation
+- Create venv in the project root with: `python -m venv venv`
+- Activate venv before working: 
+  - Mac/Linux: `source venv/bin/activate`
+  - Windows: `venv\Scripts\activate`
+- Keep a single requirements.txt file in the project root
+
+## Agent Design Principles
+- Separate agents by function (Single Responsibility Principle)
+- Gateway agents (like Telegram) should only handle communication
+- Specialized agents should perform specific tasks (research, analysis, etc.)
+- Use crew orchestration to connect agents rather than embedding functionality
+
+## Code Organization
+- Store agent definitions in separate files
+- Use YAML for configuration when possible
+- Keep API keys in .env files (never commit these to version control)
+- Document agent responsibilities clearly
+
+## Development Workflow
+- Test individual agents before integrating into crews
+- Run with verbose logging during development
+- Commit changes frequently with descriptive messages

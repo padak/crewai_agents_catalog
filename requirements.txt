@@ -1,0 +1,16 @@
+# Core libraries
+crewai==0.102.0
+python-dotenv==1.0.0
+
+# Telegram integration
+python-telegram-bot>=20.4
+
+# API tools
+google-search-results>=2.4.2
+serpapi>=0.1.5
+
+# LangChain (for custom tools in CrewAI)
+langchain>=0.3.19
+langchain-community>=0.3.18
+
+# You may add more dependencies here as you create additional agents 
