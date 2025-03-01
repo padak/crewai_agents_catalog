@@ -30,9 +30,18 @@ def setup_test_environment():
         load_dotenv()
         logger.warning("No .env.test found, using regular .env file")
     
+    # Set TEST_MODE environment variable
+    os.environ['TEST_MODE'] = 'True'
+    logger.info("Set TEST_MODE=True in environment")
+    
     # Verify required environment variables
     required_vars = ['TELEGRAM_BOT_TOKEN']
     missing_vars = [var for var in required_vars if not os.getenv(var)]
+    
+    # Check for admin chat ID
+    if not os.getenv('ADMIN_CHAT_ID'):
+        logger.warning("ADMIN_CHAT_ID not set in environment variables. Welcome message will not be sent.")
+        logger.warning("Add your Telegram chat ID to .env.test or .env file as ADMIN_CHAT_ID=your_chat_id")
     
     if missing_vars:
         logger.error(f"Missing required environment variables: {', '.join(missing_vars)}")

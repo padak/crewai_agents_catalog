@@ -82,6 +82,31 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle errors in the dispatcher"""
     logger.error(f"Update {update} caused error {context.error}")
 
+async def post_init(application: Application):
+    """Called after the application is initialized but before polling starts"""
+    if os.getenv('TEST_MODE') == 'True':
+        logger.info("Bot started in TEST_MODE - sending welcome message")
+        try:
+            # Get admin chat ID from environment, if available
+            admin_chat_id = os.getenv('ADMIN_CHAT_ID')
+            if admin_chat_id:
+                await application.bot.send_message(
+                    chat_id=admin_chat_id,
+                    text="🤖 *Test Bot Started Successfully!* 🤖\n\n"
+                    "I'm now running in test mode and listening for your messages.\n\n"
+                    "You can try:\n"
+                    "- Send any message to test basic responses\n"
+                    "- Try 'search for latest AI news' to test web search\n"
+                    "- Use /help to see available commands\n\n"
+                    "Reply to this message to start testing!",
+                    parse_mode='Markdown'
+                )
+                logger.info(f"Sent welcome test message to admin chat ID: {admin_chat_id}")
+            else:
+                logger.warning("ADMIN_CHAT_ID not set in environment variables, cannot send welcome message")
+        except Exception as e:
+            logger.error(f"Error sending welcome message: {e}")
+
 def main():
     """Start the bot"""
     # Create the Application
@@ -99,6 +124,10 @@ def main():
 
     # Start the bot
     logger.info("Bot started, listening for messages...")
+    
+    # Set post_init function
+    application.post_init = post_init
+    
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':

@@ -247,20 +247,31 @@ SERPAPI_API_KEY=your_serpapi_api_key_here
 
 # Telegram Bot Token for the Telegram Gateway Agent
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
+
+# Admin Chat ID for receiving test welcome messages
+ADMIN_CHAT_ID=your_telegram_chat_id_here
 ```
 
-## Running Tests
+## Testing
 
-To verify that your environment is set up correctly, you can run the test suite:
+You can test the Telegram bot using the provided test scripts:
+
+### Running Tests
 
 ```bash
-# For the latest CrewAI environment
-source venv_crewai_latest/bin/activate
-python tests/run_tests.py
+# Activate your virtual environment first
+source venv_crewai_latest/bin/activate  # For CrewAI 0.102.0
+# OR
+source venv/bin/activate  # For CrewAI 0.11.2
 
-# For the original CrewAI environment
-source venv/bin/activate
-python tests/run_tests.py
+# Run all tests
+./tests/run_tests.py
+
+# Run a specific unit test
+./tests/run_tests.py --test unit_test_telegram_bot
+
+# Run the bot in manual test mode
+./tests/run_tests.py --manual
 ```
 
 The test suite will:
@@ -269,7 +280,42 @@ The test suite will:
 - Report success or failure for each test
 
 You can also run individual tests:
-
 ```bash
 python tests/test_crewai_version.py
+```
+
+### Welcome Message Feature
+
+When running the bot in manual test mode, it can send you a welcome message to help guide testing:
+
+1. Add your Telegram chat ID to your `.env` file:
+   ```
+   ADMIN_CHAT_ID=your_telegram_chat_id_here
+   ```
+   
+   To get your chat ID, start a conversation with [@userinfobot](https://t.me/userinfobot) on Telegram
+
+2. Run the bot in manual test mode:
+   ```bash
+   ./tests/run_tests.py --manual
+   ```
+
+3. The bot will send you a welcome message with testing instructions, which you can respond to for immediate testing.
+
+## Environment Variables
+
+Make sure to set up your `.env` file with the appropriate API keys:
+
+```
+# OpenAI API Key for CrewAI to use GPT models
+OPENAI_API_KEY=your_openai_api_key_here
+
+# SerpAPI Key for web search functionality
+SERPAPI_API_KEY=your_serpapi_api_key_here
+
+# Telegram Bot Token for the Telegram Gateway Agent
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
+
+# Admin Chat ID for receiving test welcome messages
+ADMIN_CHAT_ID=your_telegram_chat_id_here
 ``` 
